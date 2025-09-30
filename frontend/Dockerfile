@@ -4,6 +4,14 @@ FROM node:18-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
+# 接收构建参数
+ARG REACT_APP_API_BASE_URL
+ARG REACT_APP_SOCKET_URL
+
+# 设置环境变量
+ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+ENV REACT_APP_SOCKET_URL=$REACT_APP_SOCKET_URL
+
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 

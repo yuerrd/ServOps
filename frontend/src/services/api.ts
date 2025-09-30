@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { Project, ExecutionResult, SSHConnection } from '../types';
 
-const API_BASE_URL = '/api';
+// 动态获取API基础URL，支持环境变量配置
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL 
+  ? `${process.env.REACT_APP_API_BASE_URL}/api`
+  : '/api';
 
 export const projectService = {
   // 获取所有项目（支持分页和搜索）

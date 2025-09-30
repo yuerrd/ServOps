@@ -151,10 +151,12 @@ const ProjectDetail: React.FC = () => {
   };
 
   const connectSocket = () => {
-    socketRef.current = io('http://localhost:3001');
+    // 动态获取Socket.IO服务器地址
+    const socketUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+    socketRef.current = io(socketUrl);
     
     socketRef.current.on('connect', () => {
-      console.log('Socket connected');
+      console.log('Socket connected to:', socketUrl);
       setSocketConnected(true);
       if (id) {
         socketRef.current?.emit('join-project', id);

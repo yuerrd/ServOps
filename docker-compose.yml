@@ -20,6 +20,8 @@ services:
       REDIS_HOST: ${REDIS_HOST:-localhost}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # CORS 配置，支持跨节点部署
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
     volumes:
       # 可选：挂载 SSH 私钥目录（如果需要）
       - ssh_keys:/app/ssh-keys:ro
@@ -27,6 +29,9 @@ services:
       - "3001:3001"
     networks:
       - servops-network
+    profiles:
+      - backend
+      - all
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
@@ -39,13 +44,23 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # 构建时传入后端地址
+        REACT_APP_API_BASE_URL: ${BACKEND_HOST:-http://backend:3001}
+        REACT_APP_SOCKET_URL: ${BACKEND_HOST:-http://backend:3001}
     container_name: servops-frontend
     restart: unless-stopped
+    environment:
+      # 运行时环境变量（用于 Nginx 配置）
+      BACKEND_HOST: ${BACKEND_HOST:-backend:3001}
     ports:
       - "80:80"
       - "443:443"
     networks:
       - servops-network
+    profiles:
+      - frontend
+      - all
     depends_on:
       - backend
     healthcheck:
