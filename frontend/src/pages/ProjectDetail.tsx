@@ -33,6 +33,7 @@ import {
 import { io, Socket } from 'socket.io-client';
 import { Project, LogEntry, SSHConnection } from '../types';
 import { projectService, sshService } from '../services/api';
+import config from '../config';
 
 const { Title, Text } = Typography;
 
@@ -89,7 +90,7 @@ const ProjectDetail: React.FC = () => {
 
   // 监控执行进度
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     
     if (executing && executionStartTime.current) {
       interval = setInterval(() => {
@@ -151,8 +152,8 @@ const ProjectDetail: React.FC = () => {
   };
 
   const connectSocket = () => {
-    // 动态获取Socket.IO服务器地址
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+    // 动态获取Socket.IO服务器地址，使用window对象访问环境变量
+    const socketUrl = (window as any).__RUNTIME_CONFIG__?.SOCKET_URL || 'http://localhost:3001';
     socketRef.current = io(socketUrl);
     
     socketRef.current.on('connect', () => {
@@ -224,9 +225,13 @@ const ProjectDetail: React.FC = () => {
     setScriptLoading(true);
     try {
       const result = await projectService.getScriptContent(id);
-      setScriptContent(result.content);
+      // 如果脚本内容为空，使用配置文件中的默认模板
+      const content = result.content || config.defaultScript;
+      setScriptContent(content);
     } catch (error) {
       message.error('获取脚本内容失败');
+      // 如果获取失败，也使用配置文件中的默认模板
+      setScriptContent(config.defaultScript);
     } finally {
       setScriptLoading(false);
     }

@@ -13,7 +13,6 @@ import {
   message,
   Popconfirm,
   Tooltip,
-  Divider,
   Pagination
 } from 'antd';
 import { 
@@ -24,16 +23,15 @@ import {
   EyeOutlined,
   ReloadOutlined,
   CopyOutlined,
-  DatabaseOutlined,
-  SearchOutlined
+  DatabaseOutlined
 } from '@ant-design/icons';
 import { Project, SSHConnection } from '../types';
 import { projectService, sshService, templateService } from '../services/api';
+import config from '../config';
 
 const ProjectList: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sshConnections, setSshConnections] = useState<SSHConnection[]>([]);
-  const [templates, setTemplates] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
@@ -58,10 +56,9 @@ const ProjectList: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [projectsData, connectionsData, templatesData] = await Promise.all([
+      const [projectsData, connectionsData] = await Promise.all([
         projectService.getProjects(pagination.current, pagination.pageSize, searchTerm),
-        sshService.getAllConnections(),
-        templateService.getTemplates()
+        sshService.getAllConnections()
       ]);
       
       setProjects(projectsData.projects);
@@ -70,7 +67,6 @@ const ProjectList: React.FC = () => {
         total: projectsData.total
       }));
       setSshConnections(connectionsData);
-      setTemplates(templatesData);
     } catch (error) {
       message.error('加载数据失败');
     } finally {
@@ -119,25 +115,8 @@ const ProjectList: React.FC = () => {
     setEditingProject(null);
     form.resetFields();
     form.setFieldsValue({
-      currentVersion: '0.0.1',
-      scriptContent: `#!/bin/bash
-
-# 设置脚本在任何命令失败时退出
-set -e
-
-# 从平台获取当前版本号
-original_version="{{CURRENT_VERSION}}"
-echo "当前版本号为: $original_version"
-
-# 在这里添加你的脚本逻辑
-echo "开始执行任务..."
-
-# 示例：执行一些命令
-# git pull
-# npm install
-# npm run build
-
-echo "任务执行完成！"`
+      currentVersion: config.project.defaultVersion,
+      scriptContent: config.defaultScript
     });
     setModalVisible(true);
   };
@@ -220,7 +199,7 @@ echo "任务执行完成！"`
       render: (name: string, record: Project) => (
         <Space direction="vertical" size={0}>
           <span>{name}</span>
-          {record.isTemplate && <Tag color="blue" size="small">模板</Tag>}
+          {record.isTemplate && <Tag color="blue">模板</Tag>}
         </Space>
       )
     },
@@ -403,7 +382,7 @@ echo "任务执行完成！"`
             label="工作目录" 
             rules={[{ required: true, message: '请输入工作目录路径' }]}
           >
-            <Input placeholder="例如: /home/wutong/codes/wt/WTP269_TinnoveTms" />
+            <Input placeholder="例如: /home/ubantu/codes/demo" />
           </Form.Item>
           
           <Form.Item 

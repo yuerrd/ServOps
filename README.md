@@ -48,6 +48,7 @@ npm run install:all
 
 # 配置环境变量
 cp backend/.env.example backend/.env
+# 编辑 backend/.env 文件，填入您的数据库配置信息
 
 # 启动开发服务器
 npm run dev

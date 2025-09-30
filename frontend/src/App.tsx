@@ -1,10 +1,8 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
-import { 
-  ProjectOutlined, 
-  DatabaseOutlined,
-  AppstoreOutlined 
+import {
+  ProjectOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ProjectList from './pages/ProjectList';

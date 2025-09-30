@@ -15,33 +15,37 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// 动态CORS配置
+const corsOrigin = process.env.CORS_ORIGIN || "*";
+console.log(`🔒 CORS配置: ${corsOrigin}`);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: corsOrigin === "*" ? true : corsOrigin.split(","),
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 const PORT = process.env.PORT || 3001;
 
-// 中间件
-app.use(cors());
+// 中间件 - 动态CORS配置
+app.use(cors({
+  origin: corsOrigin === "*" ? true : corsOrigin.split(","),
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 启动函数
 async function startServer() {
   try {
-    // 初始化数据库连接
-    const db = DatabaseService.getInstance();
-    const isDbConnected = await db.testConnection();
+    console.log('🚀 正在启动 ServOps 后端服务...');
+    console.log(`📊 环境变量: NODE_ENV=${process.env.NODE_ENV}, PORT=${PORT}`);
+    console.log(`🗄️ 数据库配置: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
     
-    if (!isDbConnected) {
-      console.error('❌ 无法连接到MySQL数据库，请检查配置');
-      process.exit(1);
-    }
-    
-    // 创建服务实例
+    // 创建服务实例（不依赖数据库连接）
     const projectService = new ProjectService();
     const executionService = new ExecutionService(projectService, io);
     const projectController = new ProjectController(projectService, executionService);
@@ -49,16 +53,31 @@ async function startServer() {
     // API 路由
     app.use('/api', createProjectRoutes(projectController));
 
-    // 健康检查
-    app.get('/health', async (req, res) => {
-      const projectCount = await projectService.getProjectsCount();
+    // 健康检查（简化版，不依赖数据库）
+    app.get('/health', (req, res) => {
       res.json({ 
-        status: 'ok', 
+        status: 'healthy', 
         timestamp: new Date().toISOString(),
-        projects: projectCount,
-        database: 'mysql'
+        service: 'ServOps Backend',
+        version: '1.0.0'
       });
     });
+
+    // 数据库连接测试（异步，不阻塞启动）
+    setTimeout(async () => {
+      try {
+        const db = DatabaseService.getInstance();
+        const isDbConnected = await db.testConnection();
+        
+        if (isDbConnected) {
+          console.log('✅ 数据库连接成功');
+        } else {
+          console.warn('⚠️ 数据库连接失败，部分功能可能不可用');
+        }
+      } catch (error) {
+        console.warn('⚠️ 数据库连接测试失败:', error);
+      }
+    }, 2000);
 
     // Socket.IO 连接处理
     io.on('connection', (socket) => {

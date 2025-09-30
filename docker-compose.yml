@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 后端 API 服务
   backend:
@@ -29,9 +27,7 @@ services:
       - "3001:3001"
     networks:
       - servops-network
-    profiles:
-      - backend
-      - all
+    # 移除 profiles 以支持默认启动
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
@@ -51,16 +47,14 @@ services:
     container_name: servops-frontend
     restart: unless-stopped
     environment:
-      # 运行时环境变量（用于 Nginx 配置）
-      BACKEND_HOST: ${BACKEND_HOST:-backend:3001}
+      # 运行时环境变量（用于动态配置注入）
+      BACKEND_HOST: ${BACKEND_HOST:-http://backend:3001}
     ports:
       - "80:80"
       - "443:443"
     networks:
       - servops-network
-    profiles:
-      - frontend
-      - all
+    # 移除 profiles 以支持默认启动
     depends_on:
       - backend
     healthcheck:
