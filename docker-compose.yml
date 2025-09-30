@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # 后端 API 服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: servops-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: ${DB_HOST:-localhost}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-servops_user}
+      DB_PASSWORD: ${DB_PASSWORD:-servops_pass_2024}
+      DB_NAME: ${DB_NAME:-servops}
+      DEFAULT_SSH_TIMEOUT: ${SSH_TIMEOUT:-30000}
+      REDIS_HOST: ${REDIS_HOST:-localhost}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      # 可选：挂载 SSH 私钥目录（如果需要）
+      - ssh_keys:/app/ssh-keys:ro
+    ports:
+      - "3001:3001"
+    networks:
+      - servops-network
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端 Web 服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: servops-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - servops-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  ssh_keys:
+    driver: local
+
+networks:
+  servops-network:
+    driver: bridge
